@@ -23,11 +23,12 @@ const userSchema = new Schema({
           index: true
      },
      avatar: {
-          type: String,  // cloudanry database url
+          type: String,  
           require: true,
+          trim:true,
      },
      converImage: {
-          type: String,  // cloudanry database url
+          type: String, 
      },
      watchHistory: [
           {
