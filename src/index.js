@@ -7,7 +7,7 @@ import cors from 'cors'
 import cookieParser from 'cookie-parser'
 
 connectDB()
-app = express()
+const app = express()
 app.use(cors({
      origin: `${process.env.DB_ORIGIN}`,
      credentials: true,
