@@ -3,8 +3,22 @@ import fs from 'fs'
 
 
 cloudinary.config({
-     cloud_name: 'sahilmeo',
-     api_key: '268754762784447',
-     api_secret: '<your_api_secret>' 
+     cloud_name: process.env.CLOUD_NAME,
+     api_key: process.env.CLOUD_API_KEY,
+     api_secret: process.env.CLOUD_API_SECRET
 });
 
+const uploadOnCloudinary = async (localFilePath) => {
+     try {
+          if (!localFilePath) return null
+          const response = await cloudinary.uploader.upload(localFilePath, {
+               resource_type: "auto"
+          })
+          console.log("file has been uploaded successfully", response.url);
+
+          return response
+     } catch (error) {
+          fs.unlinkSync(localFilePath)
+          return null
+     }
+}
