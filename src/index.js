@@ -20,4 +20,12 @@ app.use(express.urlencoded({
 app.use(express.static("public"))
 app.use(cookieParser())
 
+// import routes
+import userRouter from './routes/user.router.js';
+app.use('/api/v1/user', userRouter);
+
+app.listen(process.env.PORT,()=>{
+     console.log(`Server is running on port http://localhost:${process.env.PORT}`);
+})
+
 export { app }
