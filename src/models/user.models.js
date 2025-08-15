@@ -28,7 +28,7 @@ const userSchema = new Schema({
           type: String,  // cloudanry database url
           require: true,
      },
-     converImage: {
+     coverImage: {
           type: String,  // cloudanry database url
      },
      watchHistory: [
