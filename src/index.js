@@ -17,14 +17,14 @@ app.use(express.urlencoded({
      extended: true,
      limit: "16kb"
 }))
-app.use(express.static("public"))
+app.use(express.static("public"))           //this serves static files like pdf, images from the public directory
 app.use(cookieParser())
 
 // import routes
 import userRouter from './routes/user.router.js';
 app.use('/api/v1/user', userRouter);
 
-app.listen(process.env.PORT,()=>{
+app.listen(process.env.PORT, () => {
      console.log(`Server is running on port http://localhost:${process.env.PORT}`);
 })
 

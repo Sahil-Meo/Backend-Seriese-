@@ -1,5 +1,6 @@
 import { v2 as cloudinary } from 'cloudinary'
-import fs from 'fs'
+import fs from 'fs'   // node js provide fs on their own we don't need to b install (File System)
+
 
 
 cloudinary.config({
@@ -18,9 +19,9 @@ const uploadOnCloudinary = async (localFilePath) => {
           const response = await cloudinary.uploader.upload(localFilePath, {
                resource_type: "auto"
           })
-          console.log("File uploaded to Cloudinary:", response);
+          // console.log("File uploaded to Cloudinary:", response);
 
-          console.log("file has been uploaded successfully", response.url);
+          // console.log("file has been uploaded successfully", response.url);
 
           return response
      } catch (error) {
