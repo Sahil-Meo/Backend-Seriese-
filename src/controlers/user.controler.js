@@ -3,6 +3,26 @@ import { ApiError } from '../utils/ApiError.js';
 import { User } from '../models/user.models.js';
 import { uploadOnCloudinary } from '../utils/Cloudinary.js';
 import { ApiResponse } from '../utils/ApiResponse.js'
+import requareValidateEmail from '../middlewares/validateEmail.js';
+
+
+const generateAccessAndRefreshToken = async (userId) => {
+     try {
+          const findUser = await User.findById(userId);
+          if (!findUser) {
+               throw new ApiError(404, "User not found");
+          }
+
+          const accessToken = findUser.generateAccessToken();
+          const refreshToken = findUser.generateRefreshToken();
+
+          await findUser.save({ validateBeforeSave: false })
+
+          return { accessToken, refreshToken };
+     } catch (error) {
+          throw new ApiError(500, "Somthing went wrong while genrating access and refresh token!");
+     }
+}
 
 const registerUser = asyncHandler(async (req, res) => {
 
@@ -64,23 +84,48 @@ const registerUser = asyncHandler(async (req, res) => {
           new ApiResponse(200, createdUser, "User Register successfullty")
      )
 })
-
 export { registerUser }
 
 export const loginUser = async (req, res) => {
-     try {
+     // req.user => data
+     // check email and password
+     // validate email
+     // find user
+     // check password 
+     // access and refresh token
+     // send response to user
 
-          const { email, password } = req.body;
-          if ([email, password].some((field) => field?.trim() === "")) {
+     try {
+          const { username, email, password } = req.body;
+          
+          if ([username, email, password].some((field) => field?.trim() === "")) {
                throw new ApiError(400, "all fields are required");
           }
-
-          const userExists = await User.findOne({ email });
-          if (!userExists) {
+          console.log( "You reach there",email);
+          const user = await User.findOne({ email });
+          if (!user) {
                throw new ApiError(404, "User not found");
           }
 
-          
+          const isPasswordValid = await user.isPasswordCorrect(password);
+          if (!isPasswordValid) {
+               throw new ApiError(401, "Invalid password");
+          }
+
+          const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id)
+          const loggedInUser = { ...user.toObject(), accessToken, refreshToken }   // at this point we can add a quairy to fetch user again but it's depend on the use case
+          const selectedUser = loggedInUser.select("-password -refreshToken")
+          const options = {
+               httpOnly: true,
+               secure: process.env.NODE_ENV === "production",
+               sameSite: "Strict",
+               maxAge: 24 * 60 * 60 * 1000 // 1 day
+          }
+
+          return res.status(200)
+               .cookie("refreshToken", refreshToken, options)
+               .cookie("accessToken", accessToken, options)
+               .json(new ApiResponse(200, { user: loggedInUser, accessToken, refreshToken }, "User logged in successfully"));
 
      } catch (error) {
           console.log("error occure while login user:", error.message);
@@ -89,17 +134,28 @@ export const loginUser = async (req, res) => {
 }
 
 export const logoutUser = async (req, res) => {
+     // remove cookie 
+     // reset both tokens
+
      try {
-          const { userId } = req.body;
-          if (!userId) {
-               throw new ApiError(400, "User ID is required");
+          await User.findByIdAndUpdate(req.user._id, {
+               $set: {
+                    refreshToken: undefined
+               }
+          }, { new: true });
+
+          const options = {
+               httpOnly: true,
+               secure: process.env.NODE_ENV === "production",
+               sameSite: "Strict",
+               maxAge: 0 // 0 means cookie will be removed
           }
 
-          // Perform logout logic here (e.g., invalidate token, etc.)
-
-          return res.status(200).json(
-               new ApiResponse(200, null, "User logged out successfully")
-          );
+          res
+               .status(200)
+               .clearCookie("refreshToken", options)
+               .clearCookie("accessToken", options)
+               .json(new ApiResponse(200, {}, "User logged out successfully"));
      } catch (error) {
           console.log("error occure while logout user:", error.message);
           throw new ApiError(500, "Something went wrong while logout User")
