@@ -97,7 +97,7 @@ export const loginUser = async (req, res) => {
 
      try {
           const { username, email, password } = req.body;
-          
+
           if ([username, email, password].some((field) => field?.trim() === "")) {
                throw new ApiError(400, "all fields are required");
           }
@@ -159,5 +159,61 @@ export const logoutUser = async (req, res) => {
      } catch (error) {
           console.log("error occure while logout user:", error.message);
           throw new ApiError(500, "Something went wrong while logout User")
+     }
+}
+
+export const changeCurrentPassword = async (req, res) => {
+     try {
+          const { oldPassword, newPassword } = req.body;
+
+          if (!oldPassword || !newPassword) {
+               throw new ApiError(400, "All fields are required");
+          }
+
+          const user = await User.findById(req.user._id);
+          if (!user) {
+               throw new ApiError(404, "User not found");
+          }
+
+          const isOldPasswordValid = await user.isPasswordCorrect(oldPassword);
+          if (!isOldPasswordValid) {
+               throw new ApiError(401, "Invalid old password");
+          }
+
+          user.password = newPassword;
+          await user.save();
+
+          return res.status(200).json(new ApiResponse(200, {}, "Password changed successfully"));
+
+     } catch (error) {
+          // console.log("error occure while changing current password:", error.message);
+          throw new ApiError(500, "Something went wrong while changing current password")
+     }
+}
+
+export const getCurrentUser = async (req, res) => {
+     try {
+          const user = await User.findById(req.user._id).select("-password -refreshToken");
+          if (!user) {
+               throw new ApiError(404, "User not found");
+          }
+          return res.status(200).json(new ApiResponse(200, { user }, "User fetched successfully"));
+     } catch (error) {
+          // console.log("error occure while fetching current user:", error.message);
+          throw new ApiError(500, "Something went wrong while fetching current user")
+     }
+}
+
+const updateAccountDetails = async (req, res) => {
+     try {
+          const { fullname, email } = req.body;
+          if (!{ fullname, email }) return res.status(404).json(new ApiError(404, "All fields are required"));
+    const user = await User.findByIdAndUpdate(req.user._id, { fullname, email }, { new: true });
+    if (!user) return res.status(404).json(new ApiError(404, "User not found"));
+    return res.status(200).json(new ApiResponse(200, { user }, "User updated successfully"));
+     } catch (error) {
+          console.log("Something went wrong while updating your details", error.message);
+          throw new ApiError(500, "Something went wrong while updating your details")
+
      }
 }
