@@ -101,7 +101,7 @@ export const loginUser = async (req, res) => {
           if ([username, email, password].some((field) => field?.trim() === "")) {
                throw new ApiError(400, "all fields are required");
           }
-          console.log( "You reach there",email);
+          // console.log( "You reach there",email);
           const user = await User.findOne({ email });
           if (!user) {
                throw new ApiError(404, "User not found");
