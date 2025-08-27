@@ -204,16 +204,72 @@ export const getCurrentUser = async (req, res) => {
      }
 }
 
-const updateAccountDetails = async (req, res) => {
+export const updateAccountDetails = async (req, res) => {
      try {
           const { fullname, email } = req.body;
-          if (!{ fullname, email }) return res.status(404).json(new ApiError(404, "All fields are required"));
-    const user = await User.findByIdAndUpdate(req.user._id, { fullname, email }, { new: true });
-    if (!user) return res.status(404).json(new ApiError(404, "User not found"));
-    return res.status(200).json(new ApiResponse(200, { user }, "User updated successfully"));
+          if (!fullname || !email) return res.status(404).json(new ApiError(404, "All fields are required"));
+          const user = await User.findByIdAndUpdate(req.user._id, {
+               $set: {
+                    fullname, email
+               }
+          }, { new: true }).select("-password -refreshToken");
+          if (!user) return res.status(404).json(new ApiError(404, "User not found"));
+          return res.status(200).json(new ApiResponse(200, { user }, "User updated successfully"));
      } catch (error) {
           console.log("Something went wrong while updating your details", error.message);
           throw new ApiError(500, "Something went wrong while updating your details")
 
+     }
+}
+
+export const updateUserAvatar = async (req, res) => {
+     try {
+          const avatarLocalPath = req.file?.path
+          if (!avatarLocalPath) {
+               throw new ApiError(400, "avatar file is missing");
+          }
+
+          const avatar = await uploadOnCloudinary(avatarLocalPath);
+
+          if (!avatar.url) {
+               throw new ApiError(400, "Error while uploading avatar on cloudinary")
+          }
+
+          const user = await User.findByIdAndUpdate(req.user._id, {
+               $set: {
+                    avatar: avatar.url
+               }
+          }, { new: true }).select("-password -refreshToken");
+
+          return res.status(200).json(new ApiResponse(200, { user }, "Avatar updated successfully"));
+     } catch (error) {
+          console.log("Something went wrong while updating your avatar", error.message);
+          throw new ApiError(500, "Something went wrong while updating your avatar")
+     }
+}
+
+export const updateCoverImage = async (req, res) => {
+     try {
+          const coverImageLocalPath = req.file?.path
+          if (!coverImageLocalPath) {
+               throw new ApiError(400, "cover image file is missing");
+          }
+
+          const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+
+          if (!coverImage.url) {
+               throw new ApiError(400, "Error while uploading avatar on cloudinary")
+          }
+
+          const user = await User.findByIdAndUpdate(req.user._id, {
+               $set: {
+                    coverImage: coverImage.url
+               }
+          }, { new: true }).select("-password -refreshToken");
+
+          return res.status(200).json(new ApiResponse(200, { user }, "coverImage updated successfully"));
+     } catch (error) {
+          console.log("Something went wrong while updating your coverImage", error.message);
+          throw new ApiError(500, "Something went wrong while updating your coverImage")
      }
 }
