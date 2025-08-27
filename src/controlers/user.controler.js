@@ -273,3 +273,58 @@ export const updateCoverImage = async (req, res) => {
           throw new ApiError(500, "Something went wrong while updating your coverImage")
      }
 }
+
+export const getUserChannelProfile = async (req, res) => {
+     try {
+          const { username } = req.params;
+          if (!username?.trim()) {
+               throw new ApiError(400, "Username not found in params");
+          }
+          const channel = await User.aggregate([
+               {
+                    $match: { username: username.toLowerCase() }
+               },
+               {
+                    $lookup: {
+                         from: "subscriptions",
+                         localField: "_id",
+                         foreignField: "channel",
+                         as: "subscribers"
+                    }
+               },
+               {
+                    $lookup: {
+                         from: "subscriptions",
+                         localField: "_id",
+                         foreignField: "subscriber",
+                         as: "subscribedTo"
+                    }
+               },
+               {
+                    $addFields: {
+                         subscribersCount: { $size: "$subscribers" },
+                         channelSubscribedToCount: { $size: "$subscribedTo" },
+                         isSubscribed: { 
+                              $cond: {
+                                   $if: {
+                                        $in: [
+                                             req.user._id, "$subscribers.subscriber"
+                                        ]
+                                   }
+                              }
+                         }
+                    },
+               }
+          ])
+
+          if (!channel?.length) {
+               throw new ApiError(404, "Channel not found");
+          }
+
+          res.status(200).json(new ApiResponse(200, { channel: channel[0] }, "Channel fetched successfully"));
+
+     } catch (error) {
+          console.log("Something went wrong while fetching user channel profile", error.message);
+          throw new ApiError(500, "Something went wrong while fetching user channel profile")
+     }
+}
