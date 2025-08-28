@@ -304,16 +304,26 @@ export const getUserChannelProfile = async (req, res) => {
                     $addFields: {
                          subscribersCount: { $size: "$subscribers" },
                          channelSubscribedToCount: { $size: "$subscribedTo" },
-                         isSubscribed: { 
+                         isSubscribed: {
                               $cond: {
-                                   $if: {
-                                        $in: [
-                                             req.user._id, "$subscribers.subscriber"
-                                        ]
-                                   }
+                                   $if: { $in: [req.user._id, "$subscribers.subscriber"] },
+                                   than: true,
+                                   else: false,
                               }
                          }
                     },
+               },
+               {
+                    $project: {
+                         fullname: 1,
+                         username: 1,
+                         subscribersCount: 1,
+                         channelSubscribedToCount: 1,
+                         isSubscribed: 1,
+                         avatar: 1,
+                         coverImage: 1,
+                         email: 1,
+                    }
                }
           ])
 
