@@ -4,6 +4,7 @@ import { User } from '../models/user.models.js';
 import { uploadOnCloudinary } from '../utils/Cloudinary.js';
 import { ApiResponse } from '../utils/ApiResponse.js'
 import requareValidateEmail from '../middlewares/validateEmail.js';
+import mongoose from 'mongoose';
 
 
 const generateAccessAndRefreshToken = async (userId) => {
@@ -336,5 +337,57 @@ export const getUserChannelProfile = async (req, res) => {
      } catch (error) {
           console.log("Something went wrong while fetching user channel profile", error.message);
           throw new ApiError(500, "Something went wrong while fetching user channel profile")
+     }
+}
+
+export const getWatchHistory = async (req, res) => {
+     try {
+          const user = await User.aggregate([
+               {
+                    $match: {
+                         _id: new mongoose.Types.ObjectId(req.user._id),
+                    },
+               },
+               {
+                    $lookup: {
+                         from: "videos",
+                         localField: "watchHistory",
+                         foreignField: "_id",
+                         as: "watchedVideos",
+                         pipeline: [
+                              {
+                                   $lookup: {
+                                        from: "users",
+                                        localField: "owner",
+                                        foreignField: "_id",
+                                        as: "owner",
+                                        pipeline: [
+                                             {
+                                                  $project: {
+                                                       fullname: 1,
+                                                       username: 1,
+                                                       avatar: 1,
+                                                  }
+                                             }
+                                        ]
+                                   },
+
+                              },
+                              {
+                                   $addFields: {
+                                        owner: {
+                                             $first: "$owner"
+                                        }
+                                   }
+                              }
+                         ]
+                    }
+               }
+          ])
+
+          res.status(200).json(new ApiResponse(200, user[0].watchHistory, "watch history fetched successfully"))
+     } catch (error) {
+          console.log("Something went wrong while fetching user watch history", error.message);
+          throw new ApiError(500, "Something went wrong while fetching user watch history")
      }
 }
